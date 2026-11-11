@@ -8,11 +8,15 @@ RUN go mod download
 COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -trimpath \
       -ldflags "-s -w" -o /minio .
+# mc (admin client) is no longer published as an image by MinIO: build a pinned version for the
+# chart's bucket-setup Job. Not part of the server.
+RUN GOBIN=/out CGO_ENABLED=0 go install github.com/minio/mc@v0.0.0-20251106162529-77f82e18b540
 
 FROM debian:bookworm-slim
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl \
     && rm -rf /var/lib/apt/lists/* && useradd -m -u 1001 minio && mkdir /data && chown minio /data
 COPY --from=build /minio /usr/bin/minio
+COPY --from=build /out/mc /usr/bin/mc
 USER minio
 VOLUME ["/data"]
 EXPOSE 9000 9001
