@@ -25,7 +25,6 @@ jobs:
           context: .
           file: Dockerfile.ullav
           push: true
-          build-args: VERSION=ullav-${{ steps.commit.outputs.short }}
           tags: |
             ghcr.io/ullav-dev/minio:${{ steps.commit.outputs.short }}
             ghcr.io/ullav-dev/minio:latest
