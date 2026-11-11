@@ -1,0 +1,30 @@
+name: ullav-image
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master]
+    paths: ["Dockerfile.ullav", ".github/workflows/ullav-image.yaml", "**.go", "go.mod", "go.sum"]
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Get commit hash
+        id: commit
+        run: echo "short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.PAT_CLASSIC }}
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: Dockerfile.ullav
+          push: true
+          tags: |
+            ghcr.io/ullav-dev/minio:${{ steps.commit.outputs.short }}
+            ghcr.io/ullav-dev/minio:latest

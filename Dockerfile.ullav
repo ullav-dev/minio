@@ -1,0 +1,20 @@
+# Ullav build of the MinIO fork (clean fork of upstream; no functional changes).
+# Single static binary: bucket versioning and Object Lock (WORM) are part of the server source and
+# are enabled per bucket at runtime (object lock only when the bucket is created with it).
+FROM golang:1.24-bookworm AS build
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux go build -trimpath \
+      -ldflags "-s -w" -o /minio .
+
+FROM debian:bookworm-slim
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl \
+    && rm -rf /var/lib/apt/lists/* && useradd -m -u 1001 minio && mkdir /data && chown minio /data
+COPY --from=build /minio /usr/bin/minio
+USER minio
+VOLUME ["/data"]
+EXPOSE 9000 9001
+ENTRYPOINT ["/usr/bin/minio"]
+CMD ["server", "/data", "--console-address", ":9001"]
